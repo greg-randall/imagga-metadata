@@ -18,6 +18,9 @@
             imagedestroy($small_image);
         }
     }
+
+
+
     //upload the image for tagging 
     function upload_to_imagga($image_path, $debug = false) {
         include('credentials.php');
@@ -42,6 +45,9 @@
         }
         return ($json_response['result']['upload_id']);
     }
+
+
+
     function request_tags($upload_id, $quality_threshold = 30, $debug = false) {
         //request tags 
         include('credentials.php');
@@ -61,25 +67,42 @@
         }
         return ($output_tags);
     }
+
+
+
     function write_tags($input_file, $new_tags) {
         include('iptc_library.php');
         $image        = new iptc($input_file);
-        $current_tags = $image->get(IPTC_KEYWORDS);
-        if ((substr(trim($current_tags), -1) != ';') & ($current_tags != '')) {
-            $current_tags .= '; ';
+       // $current_tags = $image->get(IPTC_KEYWORDS);
+       // if ((substr(trim($current_tags), -1) != ';') & ($current_tags != '')) {
+        //    $current_tags .= '; ';
+       // }
+       // $updated_tags = $current_tags . $new_tags; //build new tag list 
+        $new_tags = str_replace(',', ';', $new_tags); //make sure tags are delimited with a semicolon
+        $new_tags = explode(';', $new_tags); //split all the tags apart
+        for ($i = 0; $i < count($new_tags); $i++) {
+            $new_tags[$i] = trim($new_tags[$i]);
         }
-        $updated_tags = $current_tags . $new_tags; //build new tag list 
-        $updated_tags = str_replace(',', ';', $updated_tags); //make sure tags are delimited with a semicolon
-        $updated_tags = explode(';', $updated_tags); //split all the tags apart
-        for ($i = 0; $i < count($updated_tags); $i++) {
-            $updated_tags[$i] = trim($updated_tags[$i]);
-        }
-        $updated_tags = array_unique($updated_tags); //remove all duplicate tags
-        $updated_tags = implode('; ', $updated_tags); //combine the de-duped tags
-        $image->set(IPTC_KEYWORDS, $updated_tags);
+        $new_tags = array_unique($new_tags); //remove all duplicate tags
+        $new_tags = implode('; ', $new_tags); //combine the de-duped tags
+        $image->set(IPTC_KEYWORDS, $new_tags);
         $image->write();
-        return ($updated_tags);
+        return ($new_tags);
     }
+
+    function get_existing_tags($input_file){
+        include('iptc_library.php');
+        $image        = new iptc($input_file);
+        $current_tags = $image->get(IPTC_KEYWORDS);
+        $current_tags = str_replace(',', ';', $current_tags); //make sure tags are delimited with a semicolon
+        $current_tags = explode(';', $current_tags);
+        for ($i = 0; $i < count($current_tags); $i++) {
+            $current_tags[$i] = trim($current_tags[$i]);
+        }
+        $current_tags = array_filter($current_tags);
+        return($current_tags);
+    }
+
     function dispay_iptc($image) {
         getimagesize($image, $data);
         $iptc = iptcparse($data['APP13']);
